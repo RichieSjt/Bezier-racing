@@ -52,4 +52,8 @@ public class Math3D : MonoBehaviour
         c.z = SC.z + Mathf.Sin(ri) * Mathf.Cos(ra) * r;
         return c;
     }
+    public static Vector3 Interpolation(Vector3 a, Vector3 b, float t) 
+    {
+        return a + (t * (b - a));
+    }
 }

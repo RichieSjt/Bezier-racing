@@ -8,20 +8,17 @@ public class Car : MonoBehaviour
     public List<Vector3> points;
     public GameObject theCar;
     public GameObject sph;
-    private Vector3[] originals;
-    private Vector3 pos;
-    private Vector3 start;
-    public float param;
-    public float d;
-    int pointIdx;
+    private Vector3[] _vertices;
+    private Vector3 _position;
+    private Vector3 _startPoint;
+    private Vector3 _targetPoint;
+    private float _param;
+    private float _d;
+    private int _pointIdx;
 
     void Start()
     {
-        originals = theCar.GetComponent<MeshFilter>().mesh.vertices;
-        // Matrix4x4 t = Transformations.TranslateM(1, 0, 0);
-        // theCar.GetComponent<MeshFilter>().mesh.vertices = Transformations.ApplyTransformation(originals, t);
-        pos = theCar.transform.position;
-        start = pos;
+        _vertices = theCar.GetComponent<MeshFilter>().mesh.vertices;
 
         int children = trackPoints.transform.childCount;
         
@@ -30,50 +27,46 @@ public class Car : MonoBehaviour
             Vector3 point = trackPoints.transform.GetChild(i).GetComponent<Transform>().transform.position;
             points.Add(point);
         }
-        pointIdx = 1;
+
+        _position = theCar.transform.position;
+        _startPoint = _position;
+        _pointIdx = 1;
+        _targetPoint = points[_pointIdx];
+
         sph = GameObject.CreatePrimitive(PrimitiveType.Sphere);
     }
 
     // Update is called once per frame
     void Update()
     {
-        Vector3 currentPoint = points[pointIdx];
-        Debug.Log("CURRENT: " + currentPoint);
-        // Debug.Log("CURRENT INDEX: " + pointIdx);
+        sph.transform.position = _position;
 
-        Debug.Log("CAR POS: " + pos);
-
-        sph.transform.position = pos;
-        
-        param += 0.001f;
-        pos = Interpolation(start, currentPoint, param);
-        d = Math3D.Magnitude(currentPoint - pos);
+        _param += 0.001f;
+        _position = Math3D.Interpolation(_startPoint, _targetPoint, _param);
+        _d = Math3D.Magnitude(_targetPoint - _position);
         
         // If we reach the target point
-        if(d < 8f)
+        if(_d < 0.1f)
         {
-            // c 0 1 2
-            start = points[pointIdx];
-
-            if (pointIdx == points.Count-1)
-                pointIdx = 0;
-            else
-                pointIdx += 1;
+            // Set the new start position
+            _startPoint = points[_pointIdx];
             
-            Debug.Log("NEW POINT: " + pointIdx);
+            // Change the target index
+            if (_pointIdx == points.Count-1)
+                _pointIdx = 0;
+            else
+                _pointIdx += 1;
+            
+            // Change the targert point
+            _targetPoint = points[_pointIdx];
+            _param = 0;
         }
 
-        Vector3 prev = Interpolation(start, currentPoint, param - 0.00005f);
-        Vector3 dir = pos - prev;
-        Vector3 du = dir.normalized;
+        // Vector3 prev = Math3D.Interpolation(startPoint, targetPoint, param - 0.00005f);
+        // Vector3 dir = position - prev;
+        // Vector3 du = dir.normalized;
 
-        Matrix4x4 t = Transformations.TranslateM(pos.x, pos.y, pos.z);
-        theCar.GetComponent<MeshFilter>().mesh.vertices = Transformations.ApplyTransformation(originals, t);
-        
-    }
-
-    public static Vector3 Interpolation(Vector3 start, Vector3 end, float param) 
-    {
-        return (end*param) + (start*-param);
+        Matrix4x4 t = Transformations.TranslateM(_position.x, _position.y, _position.z);
+        theCar.GetComponent<MeshFilter>().mesh.vertices = Transformations.ApplyTransformation(_vertices, t);
     }
 }
