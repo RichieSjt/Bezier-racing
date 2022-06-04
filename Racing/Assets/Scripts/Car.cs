@@ -7,7 +7,6 @@ public class Car : MonoBehaviour
     public GameObject trackPoints;
     public List<List<Vector3>> bezierPoints;
     public GameObject theCar;
-    public GameObject sph;
     private Vector3[] _vertices;
     private Vector3 _position;
     private Vector3 _startPoint;
@@ -15,6 +14,7 @@ public class Car : MonoBehaviour
     private float _param;
     private float _d;
     private int _curveIdx;
+    private Particle particle;
 
     void Start()
     {
@@ -34,10 +34,14 @@ public class Car : MonoBehaviour
             index++;
         }
 
+        theCar.AddComponent<Particle>();
+        particle = theCar.GetComponent<Particle>();
+        particle.radius = 0.5f;
+
+
         _position = theCar.transform.position;
         _curveIdx = 0;
         _d = 1000f;
-        sph = GameObject.CreatePrimitive(PrimitiveType.Sphere);
     }
 
     // Update is called once per frame
@@ -55,7 +59,7 @@ public class Car : MonoBehaviour
             _param = 0;
         }
         
-        sph.transform.position = _position;
+        particle.sphere.transform.position = _position;
 
         _param += 0.001f;
 
@@ -79,5 +83,7 @@ public class Car : MonoBehaviour
         Matrix4x4 t = Transformations.TranslateM(_position.x, _position.y, _position.z - 6.2f);
         
         theCar.GetComponent<MeshFilter>().mesh.vertices = Transformations.ApplyTransformation(_vertices, t * r);
+
+        //theCar.GetComponent<Transform>().position = _position;
     }
 }
