@@ -4,23 +4,7 @@ using UnityEngine;
 
 public class ParticlePool : Particle
 {
-    public float poolHeight;
-    public float poolWidth;
-    public float mass;
-    public float gravity;
-    public float restitutionCoefficient;   // Restitution Coefficient (elastic=1, inelastic = 0)
-    public float deltaTime;
-    public Vector3 forces;
-    public Vector3 acceleration;
-    public float dragUp;
-    public float dragDown;
-
-    public Vector3 drag;
-    public Vector3 previousPosition;
-    Vector3 tempPosition;
-
-    // Start is called before the first frame update
-    void Start()
+    private void Start()
     {
         sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         sphere.transform.position = position;
@@ -35,9 +19,7 @@ public class ParticlePool : Particle
         drag.y = 1;
     }
 
-
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
         if (Time.frameCount > 20)
         {
@@ -47,18 +29,7 @@ public class ParticlePool : Particle
             else drag = Vector3.zero;
             forces += drag;
 
-            Verlet(deltaTime);
+            base.Verlet(deltaTime);
         }
     }
-    
-    void Verlet(float dt)
-    {
-        tempPosition = position;                           // save p temporarily
-        acceleration = forces / mass;                  // a = F/m
-        position = 2 * position - previousPosition + (acceleration * dt * dt);   // Verlet
-        previousPosition = tempPosition;                        // restore previous position
-        sphere.transform.position = position;
-    }
-
-    
 }

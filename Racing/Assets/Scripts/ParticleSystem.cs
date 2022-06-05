@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -10,55 +11,56 @@ public class ParticleSystem : MonoBehaviour
     public float poolLength;
     public Vector3 poolOrigin;
     public float deltaTime;
-    List<GameObject> particles;
-    float midLength;
-    float midWidth;
+    private static List<GameObject> _particles;
+    private float _midLength;
+    private float _midWidth;
+    public static event Action<float> playerHit;
 
     // Start is called before the first frame update
     void Start()
     {
-        midLength = poolLength / 2.0f;
-        midWidth = poolWidth / 2.0f;
-        particles = new List<GameObject>();
+        _midLength = poolLength / 2.0f;
+        _midWidth = poolWidth / 2.0f;
+        _particles = new List<GameObject>();
         
         for(int i = 0; i < N; i++)
         {
             GameObject go = new GameObject(); 
             go.AddComponent<ParticlePool>();
-            ParticlePool p = go.GetComponent<ParticlePool>();
+            Particle p = go.GetComponent<ParticlePool>();
 
-            float x = Random.Range(poolOrigin.x - midLength * 0.95f, poolOrigin.x + midLength * 0.95f);
-            float y = Random.Range(poolOrigin.y + poolHeight * 0.8f, poolOrigin.y + poolHeight * 0.95f);
-            float z = Random.Range(poolOrigin.z - midWidth * 0.95f, poolOrigin.z + midWidth * 0.95f);
+            float x = UnityEngine.Random.Range(poolOrigin.x - _midLength * 0.95f, poolOrigin.x + _midLength * 0.95f);
+            float y = UnityEngine.Random.Range(poolOrigin.y + poolHeight * 0.8f, poolOrigin.y + poolHeight * 0.95f);
+            float z = UnityEngine.Random.Range(poolOrigin.z - _midWidth * 0.95f, poolOrigin.z + _midWidth * 0.95f);
             p.position = new Vector3(x, y, z);
             p.forces = Vector3.zero;
-            p.forces.x = Random.Range(-5.0f, 5.0f);
-            p.forces.z = Random.Range(-5.0f, 5.0f);
-            p.radius = Random.Range(0.2f, 0.5f);
+            p.forces.x = UnityEngine.Random.Range(-5.0f, 5.0f);
+            p.forces.z = UnityEngine.Random.Range(-5.0f, 5.0f);
+            p.radius = UnityEngine.Random.Range(0.2f, 0.5f);
             p.gravity = 9.81f;
             p.mass = p.radius * 2.0f;
             p.restitutionCoefficient = 0.1f;
             p.dragUp = 0.000001f;
             p.dragDown = 0.1f;
             p.deltaTime = deltaTime;
-            particles.Add(go);
+            _particles.Add(go);
         }
     }
 
     // Update is called once per frame
     void Update()
     {
-        foreach (GameObject p1 in particles)
+        foreach (GameObject p1 in _particles)
         {
-            ParticlePool particle1 = p1.GetComponent<ParticlePool>();
+            Particle particle1 = p1.GetComponent<Particle>();
             CheckPoolWalls(particle1);
             
             bool p1Collision = false;
             Color originalColor = particle1.color;
 
-            foreach (GameObject p2 in particles)
+            foreach (GameObject p2 in _particles)
             {
-                ParticlePool particle2 = p2.GetComponent<ParticlePool>();
+                Particle particle2 = p2.GetComponent<Particle>();
 
                 if (p1.GetInstanceID() != p2.GetInstanceID())
                 {
@@ -66,6 +68,11 @@ public class ParticleSystem : MonoBehaviour
 
                     if (collision)
                     {
+                        // particle1.CollisionPhysics(particle2);
+                        if (particle2.type == Particle.Type.Player)
+                        {
+                            playerHit?.Invoke(particle1.damage);
+                        }
                         particle1.sphere.GetComponent<MeshRenderer>().material.SetColor("_Color", Color.red);
                         particle2.sphere.GetComponent<MeshRenderer>().material.SetColor("_Color", Color.red);
                         p1Collision = true;
@@ -80,22 +87,27 @@ public class ParticleSystem : MonoBehaviour
         }
     }
 
-    public void CheckPoolWalls(ParticlePool particle)
+    public static void addCarParticle(GameObject car)
+    { 
+        _particles.Add(car);
+    }
+
+    public void CheckPoolWalls(Particle particle)
     {
         float topLimit = (poolOrigin.y + poolHeight) - particle.radius;
         float bottomLimit = poolOrigin.y + particle.radius;
-        float rightLimit = (poolOrigin.x + midLength) - particle.radius;
-        float leftLimit = (poolOrigin.x - midLength) + particle.radius;
-        float backLimit = (poolOrigin.z + midWidth) - particle.radius;
-        float frontLimit = (poolOrigin.z - midWidth) + particle.radius;
+        float rightLimit = (poolOrigin.x + _midLength) - particle.radius;
+        float leftLimit = (poolOrigin.x - _midLength) + particle.radius;
+        float backLimit = (poolOrigin.z + _midWidth) - particle.radius;
+        float frontLimit = (poolOrigin.z - _midWidth) + particle.radius;
 
         // Bottom
         if(particle.position.y < bottomLimit)
         {
             particle.forces.y = -particle.forces.y * particle.restitutionCoefficient;
             float diff = particle.previousPosition.y - particle.position.y;
-            particle.position.y = particle.radius;
-            particle.previousPosition.y = particle.radius - diff;
+            particle.position.y = bottomLimit;
+            particle.previousPosition.y = bottomLimit - diff;
         }
 
         // Top

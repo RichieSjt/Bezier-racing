@@ -5,85 +5,137 @@ using UnityEngine;
 public class Car : MonoBehaviour
 {
     public GameObject trackPoints;
-    public List<List<Vector3>> bezierPoints;
+    public List<List<Vector3>> bezierCurves;
     public GameObject theCar;
+    public string accelerationKey;
+    public string brakeKey;
     private Vector3[] _vertices;
     private Vector3 _position;
     private Vector3 _startPoint;
     private Vector3 _targetPoint;
-    private float _param;
-    private float _d;
+    private float _movementParam;
+    private float _distance;
     private int _curveIdx;
-    private Particle particle;
+    private Particle _particle;
+    private float _maxSpeed;
+    private float _currentSpeed;
+
+    private void OnEnable()
+    {
+        HealthSystem.playerDie += destroyCar;        
+    }
+
+    private void OnDisable()
+    {
+        HealthSystem.playerDie -= destroyCar; 
+    }
 
     void Start()
     {
         _vertices = theCar.GetComponent<MeshFilter>().mesh.vertices;
-        bezierPoints = new List<List<Vector3>>();
+        bezierCurves = new List<List<Vector3>>();
 
-        Transform bezierCurves = trackPoints.transform;
+        Transform bezierPoints = trackPoints.transform;
         
         int index = 0;
-        foreach (Transform curve in bezierCurves)
+        // Obtaining the children of track points (Curve containing points)
+        foreach (Transform curve in bezierPoints)
         {
-            bezierPoints.Add(new List<Vector3>());
-
+            bezierCurves.Add(new List<Vector3>());
+            
+            // Obtaining  the points of each individual curve and storing it in a List<List<Vector3>>
             foreach (Transform point in curve) {
-                bezierPoints[index].Add(point.position);
+                bezierCurves[index].Add(point.position);
             }
             index++;
         }
 
+        // Add the particle to the car
         theCar.AddComponent<Particle>();
-        particle = theCar.GetComponent<Particle>();
-        particle.radius = 0.5f;
-
-
+        _particle = theCar.GetComponent<Particle>();
+        _particle.radius = 1f;
+        _particle.type = Particle.Type.Player;
+        
+        // Variables initialization
         _position = theCar.transform.position;
         _curveIdx = 0;
-        _d = 1000f;
+        _distance = 1000f;
+        _maxSpeed = 0.003f;
+        _currentSpeed = 0;
+
+
+        ParticleSystem.addCarParticle(theCar);
+
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
+        CheckCarAcceleration();
+
+        // Move the particle with the car position
+        _particle.sphere.transform.position = _position;
+        _particle.position = _position;
+
+        // Set the health bar position
+        GetComponent<HealthSystem>().healthBar.setPosition(_position);
+
         // If we reach the target point
-        if(_d < 0.1f)
+        if(_distance < 0.2f)
         {            
-            // Change the target index
-            if (_curveIdx == bezierPoints.Count-1)
+            // Change the curve index
+            if (_curveIdx == bezierCurves.Count-1)
                 _curveIdx = 0;
             else
                 _curveIdx += 1;
             
-            _param = 0;
+            // Reset param
+            _movementParam = 0;
         }
         
-        particle.sphere.transform.position = _position;
+        _movementParam += _currentSpeed;
 
-        _param += 0.001f;
+        // BEZIER
+        List<Vector3> curve = bezierCurves[_curveIdx];
 
-        // Bezier
-        List<Vector3> curve = bezierPoints[_curveIdx];
-
-        _startPoint = curve[0];
+        // The target point is the last control point in the curve
         _targetPoint = curve[curve.Count-1];
 
-        _position = Bezier.EvalBezier(curve, _param);
-        _d = Math3D.Magnitude(_targetPoint - _position);
+        // Calculate the posticion using the bezier curve
+        _position = Bezier.EvalBezier(curve, _movementParam);
+        _distance = Math3D.Magnitude(_targetPoint - _position);
 
-        Vector3 prev = Bezier.EvalBezier(curve, _param-0.0005f);
+        // Direction
+        Vector3 prev = Bezier.EvalBezier(curve, _movementParam-0.0005f);
         Vector3 dir = _position - prev;
         Vector3 du = dir.normalized;
         float angle = Mathf.Rad2Deg * Mathf.Atan(du.z/du.x);
-
         Debug.DrawLine(_position, dir, Color.red);
 
+        // Set the transformation matrices to animate the car movement
         Matrix4x4 r = Transformations.RotateM(angle, Transformations.AXIS.AX_Y);
         Matrix4x4 t = Transformations.TranslateM(_position.x, _position.y, _position.z - 6.2f);
         
+        // Apply the tranformation matrices to the vertices of the car
         theCar.GetComponent<MeshFilter>().mesh.vertices = Transformations.ApplyTransformation(_vertices, t * r);
 
         //theCar.GetComponent<Transform>().position = _position;
+    }
+
+    private void CheckCarAcceleration()
+    {
+        // Accelerate if the player press the acceleration key
+        if(Input.GetKey(accelerationKey) && _currentSpeed < _maxSpeed)
+            _currentSpeed += 0.00001f;
+        
+        // Brake if the player press brake key
+        if(Input.GetKey(brakeKey) && _currentSpeed > 0)
+            _currentSpeed -= 0.00002f;
+
+        if (_currentSpeed <= 0)
+            _currentSpeed = 0;
+    }
+
+    private void destroyCar() {
+        Destroy(theCar);
     }
 }
