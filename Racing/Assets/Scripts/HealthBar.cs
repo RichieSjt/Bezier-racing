@@ -18,13 +18,4 @@ public class HealthBar : MonoBehaviour
         // Move the health bar to the offset position
         transform.position = position + offset;
     }
-
-    private void LateUpdate()
-    {
-        // The health bar is always facing to the camera
-        transform.LookAt(Camera.main.transform);
-        transform.Rotate(0, 180, 0);
-    }
-
-
 }
