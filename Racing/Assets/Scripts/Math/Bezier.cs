@@ -19,8 +19,18 @@ public class Bezier
 
     static int Factorial(int n)
     {
-        if (n == 0) return 1;
-        else return n * Factorial(n - 1);
+        List<int> table = new List<int>();
+        int ans = 0;
+
+        for (int i = 0; i <= n; i++) 
+        {
+            if (i == 0 || i == 1) table.Add(1);
+            else table.Add(table[i-1] * i);
+            
+            if (i == n) ans = table[i];
+        }
+
+        return ans;
     }
 
     static float Combination(int n, int i)
