@@ -53,19 +53,30 @@ public class Particle : MonoBehaviour
 
     public void CollisionPhysics(Particle other)
     {
-        forces = -forces * restitutionCoefficient;
-        Vector3 diff = previousPosition - position;
-        previousPosition = position - diff;
+    //     forces = -forces * restitutionCoefficient;
+    //     Vector3 diff = previousPosition - position;
+    //     previousPosition = position - diff;
 
-        other.forces = -other.forces * other.restitutionCoefficient;
-        Vector3 otherDiff = other.previousPosition - other.position;
-        other.previousPosition = other.position - otherDiff;
+    //     other.forces = -other.forces * other.restitutionCoefficient;
+    //     Vector3 otherDiff = other.previousPosition - other.position;
+    //     other.previousPosition = other.position - otherDiff;
         
+        Vector3 inDirection = Vector3.Normalize(other.previousPosition - other.position);
+        Vector3 inNormal = Vector3.Normalize(previousPosition - position);
+        Vector3 reflection = Vector3.Reflect(inDirection,inNormal);
+        other.previousPosition = reflection - position;
+        other.position = reflection;
 
         // particle.forces.y = -particle.forces.y * particle.restitutionCoefficient;
         //     float diff = particle.position.y - particle.previousPosition.y;
         //     particle.position.y = topLimit;
         //     particle.previousPosition.y = topLimit + diff;
+
+        // https://docs.unity3d.com/ScriptReference/Vector3.Reflect.html
+
+        //public static Vector3 Reflect(position - previousPosition, Vector3 inNormal);
+        //
+        //reflectedObject.position = Vector3.Reflect(originalObject.position, Vector3.right);
     }
 
     public void Verlet(float dt)

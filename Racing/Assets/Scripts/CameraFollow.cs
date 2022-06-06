@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class CameraFollow : MonoBehaviour
 {
-    public GameObject targetCar;
+    public Transform target;
     public float smoothSpeed = 10f;
 	public float sensitivity = 20f;
     public Vector3 offset;
@@ -13,7 +13,7 @@ public class CameraFollow : MonoBehaviour
     void LateUpdate()
     {
         // Following the car smoothly
-        Vector3 desiredPos = targetCar.GetComponent<Particle>().sphere.transform.position + offset;
+        Vector3 desiredPos = target.position + offset;
         Vector3 smoothPos = Vector3.Lerp(transform.position, desiredPos, smoothSpeed * Time.deltaTime);
         transform.position = smoothPos;
     }
