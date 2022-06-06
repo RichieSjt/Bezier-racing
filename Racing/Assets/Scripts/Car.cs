@@ -7,11 +7,12 @@ public class Car : MonoBehaviour
     public GameObject trackPoints;
     public List<List<Vector3>> bezierCurves;
     public GameObject theCar;
+    public Vector3 carOffset;
+    public PlayerType playerType;
     public string accelerationKey;
     public string brakeKey;
     private Vector3[] _vertices;
     private Vector3 _position;
-    private Vector3 _startPoint;
     private Vector3 _targetPoint;
     private float _movementParam;
     private float _distance;
@@ -20,14 +21,19 @@ public class Car : MonoBehaviour
     private float _maxSpeed;
     private float _currentSpeed;
 
+    public enum PlayerType
+    {
+        Player, AI
+    }
+
     private void OnEnable()
     {
-        HealthSystem.playerDie += destroyCar;        
+        HealthSystem.playerDie += DestroyCar;        
     }
 
     private void OnDisable()
     {
-        HealthSystem.playerDie -= destroyCar; 
+        HealthSystem.playerDie -= DestroyCar; 
     }
 
     void Start()
@@ -62,10 +68,10 @@ public class Car : MonoBehaviour
         _distance = 1000f;
         _maxSpeed = 0.003f;
         _currentSpeed = 0;
+        playerType = PlayerType.Player;
 
 
         ParticleSystem.addCarParticle(theCar);
-
     }
 
     private void Update()
@@ -104,6 +110,8 @@ public class Car : MonoBehaviour
         _position = Bezier.EvalBezier(curve, _movementParam);
         _distance = Math3D.Magnitude(_targetPoint - _position);
 
+        _position += carOffset;
+
         // Direction
         Vector3 prev = Bezier.EvalBezier(curve, _movementParam-0.0005f);
         Vector3 dir = _position - prev;
@@ -118,24 +126,31 @@ public class Car : MonoBehaviour
         // Apply the tranformation matrices to the vertices of the car
         theCar.GetComponent<MeshFilter>().mesh.vertices = Transformations.ApplyTransformation(_vertices, t * r);
 
-        //theCar.GetComponent<Transform>().position = _position;
+        // theCar.GetComponent<Transform>().position = _position;
     }
 
     private void CheckCarAcceleration()
     {
-        // Accelerate if the player press the acceleration key
-        if(Input.GetKey(accelerationKey) && _currentSpeed < _maxSpeed)
-            _currentSpeed += 0.00001f;
+        if (playerType == PlayerType.Player)
+        {
+            // Accelerate if the player press the acceleration key
+            if(Input.GetKey(accelerationKey) && _currentSpeed < _maxSpeed)
+                _currentSpeed += 0.00001f;
+            
+            // Brake if the player press brake key
+            if(Input.GetKey(brakeKey) && _currentSpeed > 0)
+                _currentSpeed -= 0.00002f;
+            
+            // Set to 0 to avoid the car going in reverse
+            if (_currentSpeed <= 0)
+                _currentSpeed = 0;
+        }
         
-        // Brake if the player press brake key
-        if(Input.GetKey(brakeKey) && _currentSpeed > 0)
-            _currentSpeed -= 0.00002f;
-
-        if (_currentSpeed <= 0)
-            _currentSpeed = 0;
+        if (playerType == PlayerType.AI)
+            _currentSpeed = _maxSpeed;
     }
 
-    private void destroyCar() {
+    private void DestroyCar() {
         Destroy(theCar);
     }
 }
