@@ -6,71 +6,65 @@ public class TrackSystem : MonoBehaviour
 {
     public GameObject trackPoints;
     public List<List<Vector3>> bezierCurves;
+    private static List<Vector3> _bezierPath;
     public Transform center;
-    private Vector3 _position;
-    private Vector3 _previousPosition;
-    private Vector3 _targetPoint;
-    private float _movementParam;
-    private float _distance;
-    private int _curveIdx;
+    private static int _speed;
+    public static int speed => _speed;
+    private int _pointIdx;
 
     // Getters
-    public Vector3 position => _position;
-    public Vector3 previousPosition => _previousPosition;
+    public static List<Vector3> bezierPath => _bezierPath;
 
     void Start()
     {
         bezierCurves = new List<List<Vector3>>();
+        _bezierPath = new List<Vector3>();
 
         Transform bezierPoints = trackPoints.transform;
         
         int index = 0;
         // Obtaining the children of track points (Curve containing points)
-        foreach (Transform curve in bezierPoints)
+        foreach (Transform forcurve in bezierPoints)
         {
             bezierCurves.Add(new List<Vector3>());
             
             // Obtaining  the points of each individual curve and storing it in a List<List<Vector3>>
-            foreach (Transform point in curve) {
+            foreach (Transform point in forcurve) {
                 bezierCurves[index].Add(point.position);
             }
             index++;
         }
-        
+
+        // BEZIER
+        foreach (List<Vector3> curve in bezierCurves)
+        {
+            // 100 iterations of bezier for each curve
+            for (float _movementParam = 0; _movementParam <= 1; _movementParam += 0.001f)
+            {
+                _bezierPath.Add(Bezier.EvalBezier(curve, _movementParam));
+            }
+            
+
+        }
+
         // Variables initialization
-        _position = center.position;
-        _curveIdx = 0;
-        _distance = 1000f;
+        _pointIdx = 0;
+        center.position = bezierPath[_pointIdx];
+        _speed = 4;
+    }
+
+    public static Vector3 getPosition(int idx)
+    {
+        return _bezierPath[idx];
     }
 
     private void Update()
     {
-        // If we reach the target point
-        if(_distance < 0.2f)
-        {            
-            // Change the curve index
-            if (_curveIdx == bezierCurves.Count-1)
-                _curveIdx = 0;
-            else
-                _curveIdx += 1;
-            
-            // Reset param
-            _movementParam = 0;
-        }
+        if (_pointIdx >= bezierPath.Count-speed)
+                _pointIdx = 0;
+        else
+            _pointIdx+=speed;
         
-        _movementParam += 0.003f;
-
-        // BEZIER
-        List<Vector3> curve = bezierCurves[_curveIdx];
-
-        // The target point is the last control point in the curve
-        _targetPoint = curve[curve.Count-1];
-
-        // Calculate the posticion using the bezier curve
-        _position = Bezier.EvalBezier(curve, _movementParam);
-        _distance = Math3D.Magnitude(_targetPoint - _position);
-        _previousPosition = Bezier.EvalBezier(curve, _movementParam-0.0005f);
-
-        center.position = _position;
+        center.position = bezierPath[_pointIdx];
     }
 }

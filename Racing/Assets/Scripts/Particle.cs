@@ -22,6 +22,7 @@ public class Particle : MonoBehaviour
     public Color color;
     public GameObject sphere;     // game object for the particle
     public Type type;
+    public bool isInvincible = false;
 
     public enum Type
     {
@@ -53,6 +54,8 @@ public class Particle : MonoBehaviour
 
     public void CollisionPhysics(Particle other)
     {
+    
+
     //     forces = -forces * restitutionCoefficient;
     //     Vector3 diff = previousPosition - position;
     //     previousPosition = position - diff;
@@ -60,6 +63,11 @@ public class Particle : MonoBehaviour
     //     other.forces = -other.forces * other.restitutionCoefficient;
     //     Vector3 otherDiff = other.previousPosition - other.position;
     //     other.previousPosition = other.position - otherDiff;
+
+    // Hi! Modification of current and previous positions without respecting the 
+    // previous relative distance has that effect. You should only change the 
+    // position of current and previous positions if you respect the previous relative distance. 
+    // After that, it should work OK.
         
         Vector3 inDirection = Vector3.Normalize(other.previousPosition - other.position);
         Vector3 inNormal = Vector3.Normalize(previousPosition - position);
@@ -86,5 +94,14 @@ public class Particle : MonoBehaviour
         position = 2 * position - previousPosition + (acceleration * dt * dt);   // Verlet
         previousPosition = tempPosition;                                         // restore previous position
         sphere.transform.position = position;
+    }
+
+    public IEnumerator BecomeTemporarilyInvincible()
+    {
+        isInvincible = true;
+
+        yield return new WaitForSeconds(0.5f);
+
+        isInvincible = false;
     }
 }

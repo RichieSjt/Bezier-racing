@@ -16,6 +16,16 @@ public class ParticleSystem : MonoBehaviour
     private float _midWidth;
     public static event Action<float> playerHit;
 
+    private void OnEnable()
+    {
+        Car.setCar += addCarParticle;
+    }
+
+    private void OnDisable()
+    {
+        Car.setCar -= addCarParticle;
+    }
+
     // Start is called before the first frame update
     void Start()
     {
@@ -53,36 +63,43 @@ public class ParticleSystem : MonoBehaviour
         foreach (GameObject p1 in _particles)
         {
             Particle particle1 = p1.GetComponent<Particle>();
-            CheckPoolWalls(particle1);
-            
-            bool p1Collision = false;
-            Color originalColor = particle1.color;
 
-            foreach (GameObject p2 in _particles)
+            if (particle1.type == Particle.Type.PoolParticle)
             {
-                Particle particle2 = p2.GetComponent<Particle>();
+                CheckPoolWalls(particle1);
+                
+                bool p1Collision = false;
+                Color originalColor = particle1.color;
 
-                if (p1.GetInstanceID() != p2.GetInstanceID())
+                foreach (GameObject p2 in _particles)
                 {
-                    bool collision = particle1.CheckCollision(particle2);
+                    Particle particle2 = p2.GetComponent<Particle>();
 
-                    if (collision)
+                    if (p1.GetInstanceID() != p2.GetInstanceID())
                     {
-                        // particle1.CollisionPhysics(particle2);
-                        if (particle2.type == Particle.Type.Player)
+                        bool collision = particle1.CheckCollision(particle2);
+
+                        if (collision)
                         {
-                            playerHit?.Invoke(particle1.damage);
+                            // particle1.CollisionPhysics(particle2);
+                            if (particle2.type == Particle.Type.Player)
+                            {
+                                if(!particle2.isInvincible){
+                                    playerHit?.Invoke(particle1.damage);
+                                    StartCoroutine(particle2.BecomeTemporarilyInvincible());
+                                }
+                            }
+                            particle1.sphere.GetComponent<MeshRenderer>().material.SetColor("_Color", Color.red);
+                            particle2.sphere.GetComponent<MeshRenderer>().material.SetColor("_Color", Color.red);
+                            p1Collision = true;
                         }
-                        particle1.sphere.GetComponent<MeshRenderer>().material.SetColor("_Color", Color.red);
-                        particle2.sphere.GetComponent<MeshRenderer>().material.SetColor("_Color", Color.red);
-                        p1Collision = true;
                     }
                 }
-            }
 
-            if (!p1Collision)
-            {
-                particle1.sphere.GetComponent<MeshRenderer>().material.SetColor("_Color", originalColor);
+                if (!p1Collision)
+                {
+                    particle1.sphere?.GetComponent<MeshRenderer>().material.SetColor("_Color", originalColor);
+                }
             }
         }
     }
@@ -90,6 +107,11 @@ public class ParticleSystem : MonoBehaviour
     public static void addCarParticle(GameObject car)
     { 
         _particles.Add(car);
+    }
+    
+    public static void removeCarParticle(GameObject car)
+    { 
+        _particles.Remove(car);
     }
 
     public void CheckPoolWalls(Particle particle)
