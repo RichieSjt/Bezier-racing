@@ -15,7 +15,7 @@ public class Car : MonoBehaviour
     private Vector3 _previousPosition;
     private Vector3[] _vertices;
     private Particle _particle;
-    private int _pointIdx;
+    public int pointIdx {get; set;}
     private Boolean _moving;
     public static event Action<GameObject> setCar;
 
@@ -46,7 +46,6 @@ public class Car : MonoBehaviour
         _particle.isInvincible = false;
         
         // Variables initialization
-        _pointIdx = 0;
         _moving = false;
 
         setCar?.Invoke(theCar);
@@ -59,17 +58,17 @@ public class Car : MonoBehaviour
         CheckCarAcceleration();
 
         if(_moving) {
-            if (_pointIdx >= TrackSystem.bezierPath.Count-speed)
-                _pointIdx = 0;
+            if (pointIdx >= TrackSystem.bezierPath.Count-speed)
+                pointIdx = 0;
             else
-                _pointIdx+=speed;
+                pointIdx+=speed;
         }
 
-        _position = TrackSystem.getPosition(_pointIdx);
-        if(_pointIdx == 0) 
+        _position = TrackSystem.getPosition(pointIdx);
+        if(pointIdx == 0) 
             _previousPosition = TrackSystem.getPosition(TrackSystem.bezierPath.Count-1);
         else
-            _previousPosition = TrackSystem.getPosition(_pointIdx-1);
+            _previousPosition = TrackSystem.getPosition(pointIdx-1);
 
         // Set the car offset
         _position += carOffset;
